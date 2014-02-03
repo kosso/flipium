@@ -1,6 +1,9 @@
 FLIPIUM
 =======
 
+INITIAL FORK : To try and implement using views (toImage) as the source. Also need to add an 'append' method. 
+
+
 Introducion
 -----------
 
