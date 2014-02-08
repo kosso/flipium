@@ -18,6 +18,7 @@
       wholeDuration: true,
       horizontal: false,
       images: [],
+      views:[],
       startPage: 1,
       path: "",
       cacheOnLoad: false,
@@ -25,7 +26,7 @@
       offsetTop: 0,
       offsetLeft: 0,
       construct: function() {
-        var flipToStartPage, flippers, i, image, key, value, _len, _ref, _ref2,
+        var flipToStartPage, flippers, i, image, view, key, value, _len, _ref, _ref2,
           _this = this;
         for (key in opt) {
           value = opt[key];
@@ -41,24 +42,46 @@
           this.flipBackDown = this.reset.scale(this.vv, this.hh, 1, 1);
           this.flipAround = this.reset.scale(Math.pow(-1, this.hh), Math.pow(-1, this.vv));
         } else {
-          this.reset = Ti.UI.iOS.create3DMatrix();
+          this.reset = Ti.UI.create3DMatrix();
           this.reset.setM34(-1 / this.distance);
           this.flipUp = this.reset.rotate(Math.pow(-1, this.hh) * 89.9, this.vv, this.hh, 0);
           this.flipBackUp = this.reset.rotate(-Math.pow(-1, this.hh) * 89.9, this.vv, this.hh, 0);
           this.flipDown = this.reset;
         }
-        if (Ti.App.Properties.getBool("FlipCached", false)) {
-          Ti.API.info("Reading flipcache");
+        
+      // if (Ti.App.Properties.getBool("FlipCached", false)) {
+      //  Ti.API.info("Reading flipcache");
+      //   this.path = Ti.Filesystem.applicationDataDirectory + "/flipcache/";
+      // } else if (this.cacheOnLoad) {
+      
+      // Commented out for testing
+
+        if(this.views.length > 0){
+          
+          Ti.API.info("Using newly cached VIEWS");
+          Ti.API.info(this.views);
+
+          this.cacheViews();
           this.path = Ti.Filesystem.applicationDataDirectory + "/flipcache/";
-        } else if (this.cacheOnLoad) {
-          this.cacheImages();
-          Ti.API.info("Using newly cached");
-          this.path = Ti.Filesystem.applicationDataDirectory + "/flipcache/";
+
+          _ref = this.views;
+
         } else {
-          Ti.API.info("Loading from " + this.path);
+         
+          Ti.API.info("Using newly cached IMAGES");
+          Ti.API.info(this.images);
+          this.cacheImages();
+          this.path = Ti.Filesystem.applicationDataDirectory + "/flipcache/";
+
+          _ref = this.images;
+
         }
+      // } else {
+      //  Ti.API.info("Loading from " + this.path);
+      // }
+
         flippers = [Flipium.createFlipper(0, this)];
-        _ref = this.images;
+        
         for (i = 0, _len = _ref.length; i < _len; i++) {
           image = _ref[i];
           flippers.push(Flipium.createFlipper(i + 1, this));
@@ -70,7 +93,11 @@
         this.flippers[0].swapImg();
         this.flippers[0].wrap.transform = this.flipDown;
         this.flippers[0].shadow.opacity = 0;
-        this.totalPages = this.images.length;
+        if(this.views){
+          this.totalPages = this.views.length;
+        } else {
+          this.totalPages = this.images.length;
+        }
         flipToStartPage = function() {
           if (_this.currentPage < _this.startPage) {
             _this.flippers[_this.currentPage].flip(0);
@@ -86,10 +113,26 @@
         this.height = this.height + this.offsetTop;
         return this;
       },
+      cacheViews: function() {
+        var i, view, _len, _ref, _results;
+        Ti.API.info("Caching views to flipcache");
+        // Commented out for testing
+        //Ti.App.Properties.setBool("FlipCached", true);
+        _ref = this.views;
+        _results = [];
+        for (i = 0, _len = _ref.length; i < _len; i++) {
+          Ti.API.info(_ref[i]);
+          view = _ref[i];
+          _results.push(this.cacheImageOfView(view, i + 1));
+        }
+        return _results;
+      },
+
       cacheImages: function() {
         var i, image, _len, _ref, _results;
         Ti.API.info("Caching images to flipcache");
-        Ti.App.Properties.setBool("FlipCached", true);
+        // Commented out for testing
+        //Ti.App.Properties.setBool("FlipCached", true);
         _ref = this.images;
         _results = [];
         for (i = 0, _len = _ref.length; i < _len; i++) {
@@ -97,6 +140,49 @@
           _results.push(this.cacheImg(image, i + 1));
         }
         return _results;
+      },
+      cacheImageOfView: function(view, index) {
+        var appDir, dir, f;
+        appDir = Ti.Filesystem.applicationDataDirectory;
+        dir = Ti.Filesystem.getFile(appDir, "flipcache");
+        dir.createDirectory();
+        f = Ti.Filesystem.getFile(appDir + "/flipcache/", "img_" + index + "_" + (this.hh ? "l" : "t") + ".png");
+        f.write(this.makeImg(view, "top"));
+        f = Ti.Filesystem.getFile(appDir + "/flipcache/", "img_" + index + "_" + (this.hh ? "r" : "b") + ".png");
+        f.write(this.makeImg(view, "bottom"));
+        return f = null;
+      },
+      makeImg: function(view, position) {
+        var crop, cont, postImg;
+        crop = Ti.UI.createView({
+          width: this.width / (1 + this.hh),
+          height: this.height / (1 + this.vv),
+          top: 0,
+          left: 0
+        });
+ 
+        cont = Ti.UI.createView({
+          width: this.width ,
+          height: this.height,
+          top: 0,
+          left: 0
+        });
+
+        cont.add(view);
+        crop.add(cont);
+        if (position === "bottom" && this.hh) {
+          cont.left = -this.width /  (2 - this.android);
+        } else if (position === "bottom" && !this.hh) {
+          cont.top = -this.height /  (2 - this.android);
+        }
+        if (!this.android) {
+          return crop.toImage();
+        } else {
+          postImg = Ti.UI.createImageView({
+            image: crop.toImage()
+          });
+          return postImg.toBlob();
+        }
       },
       cacheImg: function(image, index) {
         var appDir, dir, f;
@@ -177,6 +263,8 @@
         left: 0
       }),
       wrap: Ti.UI.createView({
+        //borderWidth:2,
+        //borderColor:'red',
         width: ff.width / (1 + ff.hh),
         height: ff.height / (1 + ff.vv),
         top: ff.hh ? 0 : ff.height / 2,
@@ -215,39 +303,40 @@
         var _this = this;
         this.flipUpAnim = Ti.UI.createAnimation({
           transform: ff.flipUp,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.flipDownAnim = Ti.UI.createAnimation({
           transform: ff.flipDown,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.flipBackUpAnim = Ti.UI.createAnimation({
           transform: ff.flipBackUp,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.flipBackDownAnim = Ti.UI.createAnimation({
           transform: ff.android ? ff.flipBackDown : ff.flipDown,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.shadowOutAnim = Ti.UI.createAnimation({
           opacity: 0,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.shadowInAnim = Ti.UI.createAnimation({
           opacity: 0.75,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_IN : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_IN : void 0
         });
         this.darkenOutAnim = Ti.UI.createAnimation({
           opacity: 0,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_OUT : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_OUT : void 0
         });
         this.darkenInAnim = Ti.UI.createAnimation({
           opacity: 0.08,
-          curve: !ff.android ? Ti.UI.iOS.ANIMATION_CURVE_EASE_IN : void 0
+          curve: !ff.android ? Ti.UI.ANIMATION_CURVE_EASE_IN : void 0
         });
         this.flipUpAnim.addEventListener("complete", function() {
           ff.flipping -= 1;
           _this.flipping -= 1;
+          Ti.API.info('flipUpAnim complete');
           if (_this.flipping === 0) {
             if (!_this.flipped) _this.swapImg();
             return _this.flip(0.5);
@@ -256,6 +345,7 @@
         this.flipBackUpAnim.addEventListener("complete", function() {
           ff.flipping -= 1;
           _this.flipping -= 1;
+          Ti.API.info('flipBackUpAnim complete');
           if (_this.flipping === 0) {
             if (_this.flipped) _this.swapImg(true);
             return _this.flip(0.5, true);
@@ -265,14 +355,19 @@
           ff.flipping -= 1;
           _this.flipping -= 1;
           _this.darken.opacity = 0;
+          Ti.API.info('flipDownAnim complete');
           return _this.shadow.opacity = 0;
         });
         this.flipBackDownAnim.addEventListener("complete", function() {
           ff.flipping -= 1;
           _this.flipping -= 1;
           _this.darken.opacity = 0;
+          Ti.API.info('flipBackDownAnim complete');
           if (_this.prev()) return _this.prev().darken.opacity = 0;
         });
+        //this.img_t.add(Ti.UI.createLabel({top:10, text:'img_t '+index, color:'white'}));
+        //this.img_b.add(Ti.UI.createLabel({bottom:10,text:'img_b '+index, color:'white'}));
+
         this.wrap.add(this.img_t);
         this.img_t.visible = false;
         this.wrap.add(this.img_b);
@@ -354,7 +449,10 @@
           dur = this.duration / 2;
           if (!ff.wholeDuration) {
             dur = dur * Math.pow(2 * y, 0.625);
-            if (this.index === ff.totalPages) dur = dur * 2;
+            if (this.index === ff.totalPages){
+             Ti.API.info('end of array');
+             dur = dur * 2;
+            }
           }
           if (ff.android) {
             this.flipBackDownAnim.transform = ff.reset.scale(1 - 2 * y * ff.hh, 1 - 2 * y * ff.vv, 1, 1);
@@ -370,6 +468,7 @@
         return this.flipping += 1;
       },
       swapImg: function(reverse) {
+        Ti.API.info('swapImg: '+reverse);
         if (reverse) {
           this.img_t.visible = false;
           this.img_b.visible = true;

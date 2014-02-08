@@ -1,6 +1,11 @@
 FLIPIUM
 =======
 
+Feb 8 : Added ability to use views instead of images. 
+
+To do : Swap back to original (potentially interactive) view after the flip.
+
+
 INITIAL FORK : To try and implement using views (toImage) as the source. Also need to add an 'append' method. 
 
 
