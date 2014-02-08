@@ -35,9 +35,10 @@ The following properties can be passed as a single object to the createFlipView(
 
 * duration: Time for the a page to turn fully in ms (default = 500)
 * images: An array containing your image filenames, e.g. ["1.png", "2.png", "3.png"]
+* path: Specify path to the folder containing your images
+* OR views: An array of Ti.UI.views 
 * horizontal: Set to true for horizontal flipping (default = false)
 * startPage: FlipView will flip to this page on load (default = 1)
-* path: Specify path to the folder containing your images
 * cacheOnLoad: By set to true, Flipium will crop and cache your images into flippable pages and save them in the ApplicationDataDirectory. If set to false, Flipium will expect each page to already be separated into two equally-sized images, with filenames in the format: "img_1_t.png" and "img_1_b.png" for top-bottom flipping, or "img_1_l.png" and "img_1_r.png" for left-right flipping (default = false)
 * distance: A number specifying the distance for the 3D animation. No meaningful units (default = 1000)
 
