@@ -4,18 +4,37 @@
 
 var Flipium = require("flipium");
 
-var view1 = Ti.UI.createView({
+// Experiments/edits by Kosso in attempts to use views instead of images as the pages of the flipview.
+
+// Kosso:
+// Container to hold the original views while the dragview is not being touched. 
+// Problem here is: the underlying views cannot receive the click events (or at least I can't see how)
+var con = Ti.UI.createView({
   height:460,
   width:320,
-  backgroundColor:'red'
+  top:0,
+  zIndex:2, 
+  borderColor:'green',
+  backgroundColor:'transparent'
+});
+
+
+var view1 = Ti.UI.createView({
+  height:460,
+  top:0,
+  width:320,
+  zIndex:2, 
+  //backgroundColor:'red'
+  backgroundImage:'/images/1.png'
 });
 
 view1.add(Ti.UI.createLabel({
   text:'VIEW ONE',
+  color:'red', 
   font:{fontSize:40}
 }));
 
-view1.add(Ti.UI.createButton({
+var a_button = Ti.UI.createButton({
   title:'button',
   width:100,
   height:40,
@@ -24,30 +43,67 @@ view1.add(Ti.UI.createButton({
   tintColor:'red',
   borderColor:'yellow',
   borderWidth:10
-}));
+});
+
+view1.add(a_button);
 
 
 var view2 = Ti.UI.createView({
   height:460,
   width:320,
-  backgroundColor:'blue'
+  top:0,
+  zIndex:2,
+  backgroundImage:'/images/2.png'
 });
 
 view2.add(Ti.UI.createLabel({
   text:'VIEW TWO',
+  color:'white',
   font:{fontSize:40}
 }));
+
+var b_button = Ti.UI.createButton({
+  title:'add',
+  width:130,
+  height:40,
+  top:90,
+  backgroundColor:'white',
+  tintColor:'red',
+  borderColor:'black',
+  borderWidth:5
+});
+
+view2.add(b_button);
 
 var view3 = Ti.UI.createView({
   height:460,
   width:320,
-  backgroundColor:'green'
+  top:0,
+  zIndex:2,  
+  backgroundImage:'/images/3.png'
 });
+
 
 view3.add(Ti.UI.createLabel({
   text:'VIEW THREE',
+  color:'white', 
   font:{fontSize:40}
 }));
+
+
+var c_button = Ti.UI.createButton({
+  title:'button',
+  width:100,
+  height:40,
+  bottom:30,
+  backgroundColor:'white',
+  tintColor:'red',
+  borderColor:'yellow',
+  borderWidth:10
+});
+
+view3.add(c_button);
+
 
 
 fv = Flipium.createFlipView({
@@ -55,12 +111,16 @@ fv = Flipium.createFlipView({
   
   //images: ["1.png", "2.png", "3.png"], 
   //path: "/example/",
-
+  zIndex:1,
   horizontal: false,
   cacheOnLoad: false,
   duration: 500,
   height: 460  
 });
+
+// wire this up to be able to add/remove the views from flipium.js
+fv.con = con;
+
 
 /*
 
@@ -96,9 +156,26 @@ The following properties can be passed as a single object to the createDragView(
 
 */
 
+
+// Tests : Moving the dragview zone to the side to allow/test underyling interactive views.
+
+dv.zIndex = 100;
+dv.borderColor = 'yellow';
+dv.left = 0;
+dv.top = 0;
+dv.width = 160;
+dv.bubbleParent = true;
+
+//dv.touchEnabled = false;
+
+
 dv.addEventListener('tap', function(e){
   Ti.API.info('dragview "tap" event ');
   Ti.API.info(e);
+
+  // try to fire this on to the container view. (didin't work)
+  //con.fireEvent('click', e);
+
 
 });
 
@@ -110,6 +187,54 @@ win = Ti.UI.createWindow({
 });
 
 win.add(fv);
+
 win.add(dv);
+
+con.add(view1); // probably should do this within flipium.js when initialising
+
+win.add(con);
+
+
 //win.add(view1);
 win.open();
+
+a_button.addEventListener('click', function(e){
+  Ti.API.info('Test click on view one');
+});
+
+
+
+var view4 = Ti.UI.createView({
+  height:460,
+  width:320,
+  top:0,
+  zIndex:2,  
+  backgroundImage:'/images/4.png'
+});
+
+
+var view5 = Ti.UI.createView({
+  height:460,
+  width:320,
+  top:0,
+  zIndex:2,  
+  backgroundImage:'/images/5.png'
+});
+
+c_button.addEventListener('click', function(e){
+  
+  // Test: To dynamically add another view to the flipview. 
+  // Still not quite working.. Split images of the view are being generated/cached ok. But flippers themselves not being properly constructed and added.
+  fv.addFlipView(view5);
+});
+
+
+b_button.addEventListener('click', function(e){
+
+  // Another test with another view...
+  fv.addFlipView(view4);
+
+});
+
+
+

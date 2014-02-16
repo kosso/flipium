@@ -1,3 +1,4 @@
+        //alert(txt);
 (function() {
   var Flipium;
 
